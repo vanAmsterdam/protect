@@ -1,0 +1,44 @@
+[metadata]
+author = "Wouter van Amsterdam"
+author_email = "w.a.c.vanamsterdam@gmail.com"
+
+[project]
+name = "protectcode"
+version = "0.1.0"
+description = "Implementation of the PROTECT method"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "arviz>=0.22.0",
+    "funsor>=0.4.5",
+    "numpyro>=0.19.0",
+    "pandas>=2.3.2",
+    "pyyaml>=6.0.2",
+    "tfp-nightly[jax]>=0.26.0.dev20250827",
+]
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.30.1",
+    "ipywidgets>=8.1.7",
+    "jupyter>=1.1.1",
+    "nbconvert>=7.16.6",
+    "nbformat>=5.10.4",
+    "pytest>=8.3.4",
+    "scikit-survival>=0.25.0",
+    "seaborn>=0.13.2",
+]
+
+[tool.pdm]
+distribution = false
+
+[tool.pdm.build]
+includes = ["protect"]
+
+[tool.ruff]
+include = ["*.py", "*.pyi", "**/pyproject.toml"] 

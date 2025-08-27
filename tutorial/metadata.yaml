@@ -1,0 +1,8 @@
+model_control:      # optional flags that control how the model is run (e.g. should certain interaction terms be included?)
+  Fsigmoid: true
+  Ftx_int: true
+f_proxies:          # what are the proxies of F called?
+  - proxy1
+  - proxy2
+control_variables:  # what are the control or noise variables? these can have no missing values
+  - age

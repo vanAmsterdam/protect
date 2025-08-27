@@ -1,0 +1,14 @@
+﻿prm_name,value_orig,value_sim
+b_age_F,-0.87,-1
+b_F_proxy1,-2.05,-4
+mu_proxy1,-0.84,0
+b_F_proxy2,-2.3,-3.5
+mu_proxy2,1.25,-2.5
+b_F_tx,6.16,1.5
+mu_tx,3.667,-0.22
+b_F_y,-1.17,-1
+b_tx_y,-0.02,-0.02
+b_Ftx_y,-0.12,-0.12
+alpha0,0.74,0.74
+beta0,-0.28,-0.28
+nu0,-0.06,-0.06

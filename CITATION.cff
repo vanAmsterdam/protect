@@ -1,0 +1,44 @@
+cff-version: 1.2.0
+title: "PROTECT: PRoxy-based individual Treatment EffeCT modeling in cancer"
+message: "If you use this software, please cite the paper below"
+authors:
+  - family-names: "van Amsterdam"
+    given-names: "Wouter A. C."
+    orcid: "https://orcid.org/0000-0002-3181-0810"
+version: 0.1.0
+date-released: 2025-08-27
+license: MIT
+repository-code: "https://github.com/vanAmsterdam/protect"
+
+preferred-citation:
+  type: article
+  title: "Individual Treatment Effect Estimation in the Presence of Unobserved Confounding Using Proxies: A Cohort Study in Stage III Non-Small Cell Lung Cancer"
+  authors:
+    - family-names: "van Amsterdam"
+      given-names: "Wouter A. C."
+    - family-names: "Verhoeff"
+      given-names: "Joost J. C."
+    - family-names: "Harlianto"
+      given-names: "Netanja I."
+    - family-names: "Bartholomeus"
+      given-names: "Gijs A."
+    - family-names: "Puli"
+      given-names: "Aahlad Manas"
+    - family-names: "de Jong"
+      given-names: "Pim A."
+    - family-names: "Leiner"
+      given-names: "Tim"
+    - family-names: "van Lindert"
+      given-names: "Anne S. R."
+    - family-names: "Eijkemans"
+      given-names: "Marinus J. C."
+    - family-names: "Ranganath"
+      given-names: "Rajesh"
+  journal: "Scientific Reports"
+  volume: "12"
+  issue: "1"
+  pages: "5848"
+  year: 2022
+  publisher: "Nature Publishing Group"
+  doi: "10.1038/s41598-022-09775-9"
+  url: "https://www.nature.com/articles/s41598-022-09775-9"
