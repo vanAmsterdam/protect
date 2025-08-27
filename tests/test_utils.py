@@ -1,7 +1,7 @@
 import pytest
 import jax
 from jax import numpy as jnp, random
-from protect.utils import time_event_to_time_cens, generate_cv_splits, generate_cv_intrain_matrix, summary_likelihoods_to_df, summary_likelihoods_to_df_per_ppmode
+from causalprotect.utils import time_event_to_time_cens, generate_cv_splits, generate_cv_intrain_matrix, summary_likelihoods_to_df, summary_likelihoods_to_df_per_ppmode
 
 def test_time_event_to_time_cens():
     time = jnp.array([1, 2, 3, 4, 5])
@@ -257,7 +257,7 @@ def test_generate_cv_intrain_matrix():
     assert jnp.all(jnp.sum(intrain_matrix, axis=1) == num_obs - num_obs // num_folds)
 
 def test_array_to_df():
-    from protect.utils import array_to_df
+    from causalprotect.utils import array_to_df
 
     # 0D test
     arr0 = jnp.array(42)

@@ -12,9 +12,9 @@ import pytest
 import pandas as pd
 from jax import numpy as jnp, random
 
-from protect.inference import PROTECTInference
-from protect.models import PROTECTModel
-from protect.utils import load_yaml, summary_likelihoods_to_df
+from causalprotect.inference import PROTECTInference
+from causalprotect.models import PROTECTModel
+from causalprotect.utils import load_yaml, summary_likelihoods_to_df
 
 rng_key = random.PRNGKey(0)
 NUM_OBS = 30
@@ -161,7 +161,7 @@ def test_model_check_evaluation(
     assert 'all_passed' in model_check_evaluation, "'all_passed' not in model_check_evaluation"
 
     # make the dataframe
-    from protect.utils import model_check_evaluation_to_df
+    from causalprotect.utils import model_check_evaluation_to_df
     df = model_check_evaluation_to_df(model_check_evaluation)
     # check that the dataframe has the expected columns
     assert 'passed' in df.columns, "'passed' not in df columns"

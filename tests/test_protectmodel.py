@@ -2,8 +2,8 @@ import pytest
 import pandas as pd
 import numpy as np
 
-from protect.models import PROTECTModel, tutorial_model
-from protect.utils import load_yaml
+from causalprotect.models import PROTECTModel, tutorial_model
+from causalprotect.utils import load_yaml
 from jax.random import PRNGKey
 
 @pytest.fixture(scope="module")

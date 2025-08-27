@@ -3,9 +3,9 @@ author = "Wouter van Amsterdam"
 author_email = "w.a.c.vanamsterdam@gmail.com"
 
 [project]
-name = "protectcode"
-version = "0.1.0"
-description = "Implementation of the PROTECT method"
+name = "causalprotect"
+version = "0.1.1"
+description = "Implementation of the PROTECT method for proxy-based causal inference"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -38,7 +38,7 @@ dev = [
 distribution = false
 
 [tool.pdm.build]
-includes = ["protect"]
+includes = ["causalprotect"]
 
 [tool.ruff]
 include = ["*.py", "*.pyi", "**/pyproject.toml"] 

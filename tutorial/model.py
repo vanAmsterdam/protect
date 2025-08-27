@@ -5,7 +5,7 @@ define the statistical model
 import numpy as np, numpyro
 from numpyro import distributions as dist, sample
 from numpyro.handlers import mask
-from protect.distributions import PowerGeneralizedWeibullLog as PGW, NegativeHalfNormal
+from causalprotect.distributions import PowerGeneralizedWeibullLog as PGW, NegativeHalfNormal
 
 from jax.scipy.special import expit
 

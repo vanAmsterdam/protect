@@ -10,9 +10,9 @@ import numpyro
 import pandas as pd
 from jax import random
 
-from protect.models import PROTECTModel, tutorial_model
-from protect.inference import PROTECTInference
-from protect.utils import load_yaml
+from causalprotect.models import PROTECTModel, tutorial_model
+from causalprotect.inference import PROTECTInference
+from causalprotect.utils import load_yaml
 
 RNG_SEED = 123
 NUM_CHAINS = 2

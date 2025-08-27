@@ -14,9 +14,9 @@ import pandas as pd
 from jax import numpy as jnp, random
 
 k = random.PRNGKey(0)
-from protect.inference import PROTECTInference
-from protect.models import PROTECTModel
-from protect.utils import load_yaml, summary_likelihoods_to_df
+from causalprotect.inference import PROTECTInference
+from causalprotect.models import PROTECTModel
+from causalprotect.utils import load_yaml, summary_likelihoods_to_df
 
 NUM_OBS = 30
 NUM_FOLDS = 2
@@ -25,7 +25,7 @@ NUM_SAMPLES = 50
 NUM_LOCAL_DRAWS = 20
 
 def test_slice_posterior_for_pp():
-    from protect.inference import _slice_posterior_for_pp
+    from causalprotect.inference import _slice_posterior_for_pp
 
     num_chains = 2
     num_samples = 20

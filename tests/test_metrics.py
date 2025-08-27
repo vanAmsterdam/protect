@@ -5,7 +5,7 @@ import pytest
 import numpy as np
 import jax.numpy as jnp
 
-from protect.utils import (
+from causalprotect.utils import (
     harrell_c,
     harrell_c_streaming,
     roc_auc,

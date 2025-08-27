@@ -12,9 +12,9 @@ import pandas as pd
 import pytest
 from jax import random
 
-from protect.inference import PROTECTInference
-from protect.models import PROTECTModel
-from protect.utils import load_yaml, summarize_likelihoods
+from causalprotect.inference import PROTECTInference
+from causalprotect.models import PROTECTModel
+from causalprotect.utils import load_yaml, summarize_likelihoods
 
 
 @pytest.fixture(scope="module")

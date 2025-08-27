@@ -2,8 +2,8 @@ import numpyro
 import pytest
 from jax import numpy as jnp, vmap
 
-from protect.models import PROTECTModel
-from protect.inference import PROTECTInference
+from causalprotect.models import PROTECTModel
+from causalprotect.inference import PROTECTInference
 from numpyro import distributions as dist, sample
 
 def mixture_model(data, control, prm_fn, obs_masks=None):

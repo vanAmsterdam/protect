@@ -1,7 +1,7 @@
 # test marginalization of hazard ratio in power generalized weibull model
 # compare with tests/rcode/marginal_hr.R
 
-from protect.inference import _marginalize_hazard_ratio_pgw
+from causalprotect.inference import _marginalize_hazard_ratio_pgw
 import pytest
 
 

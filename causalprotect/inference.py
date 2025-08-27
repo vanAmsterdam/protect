@@ -17,11 +17,11 @@ from numpyro.infer.mcmc import MCMC, MCMCKernel
 from numpyro.infer.util import log_likelihood
 from numpy.polynomial.hermite_e import hermegauss
 
-from protect.models import PROTECTModel
-from protect.distributions import PowerGeneralizedWeibullLog as PGW
-from protect.utils import optimize_pgw, time_event_to_time_cens, generate_cv_intrain_matrix, summarize_likelihoods
-from protect.utils import get_log_likelihoods_from_trace
-from protect.utils import harrell_c_streaming, roc_auc
+from causalprotect.models import PROTECTModel
+from causalprotect.distributions import PowerGeneralizedWeibullLog as PGW
+from causalprotect.utils import optimize_pgw, time_event_to_time_cens, generate_cv_intrain_matrix, summarize_likelihoods
+from causalprotect.utils import get_log_likelihoods_from_trace
+from causalprotect.utils import harrell_c_streaming, roc_auc
 
 
 class PROTECTInference:

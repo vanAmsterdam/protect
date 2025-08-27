@@ -16,9 +16,9 @@ from numpyro.infer.hmc import NUTS
 from numpyro.infer.mcmc import MCMC
 from numpyro.infer.util import log_likelihood
 
-from protect.distributions import PowerGeneralizedWeibullLog as PGW
+from causalprotect.distributions import PowerGeneralizedWeibullLog as PGW
 # test utils.optimize_pgw
-from protect.utils import optimize_pgw
+from causalprotect.utils import optimize_pgw
 
 # Global variable for the number of samples
 NUM_SAMPLES = 400

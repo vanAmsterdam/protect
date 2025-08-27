@@ -7,8 +7,8 @@ from jax import numpy as jnp, random, vmap
 from jax.scipy.special import expit
 from numpyro import distributions as dist, sample
 from numpyro.handlers import mask, seed, trace, condition
-from protect.distributions import PowerGeneralizedWeibullLog as PGW
-from protect.utils import create_prior_func, priorspec_to_priorfunc, make_dummy_priorfunc, check_data, time_event_to_time_cens
+from causalprotect.distributions import PowerGeneralizedWeibullLog as PGW
+from causalprotect.utils import create_prior_func, priorspec_to_priorfunc, make_dummy_priorfunc, check_data, time_event_to_time_cens
 import numpy as np
 from typing import Callable
 from pathlib import Path

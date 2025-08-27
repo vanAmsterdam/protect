@@ -6,7 +6,7 @@ from pathlib import Path
 import numpyro
 import jax
 import numpyro.distributions as dist
-from protect.distributions import PowerGeneralizedWeibullLog as PGW, NegativeHalfNormal
+from causalprotect.distributions import PowerGeneralizedWeibullLog as PGW, NegativeHalfNormal
 import numpy as np
 import pandas as pd
 from jax import numpy as jnp, ops, random, lax
