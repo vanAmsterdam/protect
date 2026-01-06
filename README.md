@@ -4,14 +4,24 @@ Official implementation of PROTECT
 
 ## installation
 
+```bash
+pip install causalprotect
+```
+
+To be able to run the [tutorial notebook](tutorials/inference_demo.ipynb),
+also install the `dev` dependencies:
+
+```bash
+pip install causalprotect[dev]
+```
+
 Development version: clone this repository, run
 
 ```bash
 pip install -e .
 ```
 
-To be able to run the [tutorial notebook](tutorials/inference_demo.ipynb),
-also install the `dev` dependencies:
+or
 
 ```bash
 pip install -e .[dev]
