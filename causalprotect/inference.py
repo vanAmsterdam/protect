@@ -518,6 +518,18 @@ class PROTECTInference:
             if verbose:
                 print("running baseline inference on train folds")
 
+            # update mcmc_kwargs with default values only if they do not occur in baseline_mcmc_kwargs
+            default_baseline_mcmc_kwargs = {
+                "num_warmup": 100,
+                "num_samples": 500,
+                "num_chains": 1,
+                "progress_bar": False,
+                "jit_model_args": True,
+                "chain_method": "sequential",  # NOTE <- this throws a warning when later using an outer pmap as we're nesting pmaps
+            }
+            for key, value in default_baseline_mcmc_kwargs.items():
+                baseline_mcmc_kwargs.setdefault(key, value)
+
             baseline_fn_base = _make_baseline_fn(
                 global_prm_names,
                 inference_model,
