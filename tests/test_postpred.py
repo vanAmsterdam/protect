@@ -20,6 +20,7 @@ NUM_LOCAL_DRAWS = 5
 
 numpyro.set_host_device_count(NUM_CHAINS)
 
+
 @pytest.fixture(scope="module")
 def rng_key():
     rng_key = random.PRNGKey(RNG_SEED)
@@ -50,21 +51,22 @@ def protector(data, model):
     protector = PROTECTInference(model, data)
     return protector
 
+
 def test_postpred(protector, rng_key):
     nobs = protector.default_control["N"]
     rng_key, sub_key = random.split(rng_key)
     # first run inference
     global_samples = protector.run_inference(
         rng_key=sub_key,
-        mcmc_kwargs = dict(
+        mcmc_kwargs=dict(
             num_samples=50,
             num_warmup=10,
             num_chains=NUM_CHAINS,
-            chain_method="parallel",
+            chain_method="sequential",
             progress_bar=False,
-        )
+        ),
     )
-    
+
     # test that the shape of the samples is correct for no_tx ppmode
     rng_key, sub_key = random.split(rng_key)
     pp_samples_no_tx = protector.run_postpred_mcmc(
@@ -80,9 +82,9 @@ def test_postpred(protector, rng_key):
     )
 
     # check shapes of samples
-    assert pp_samples_no_tx['alpha0'].shape == (NUM_LOCAL_DRAWS, )
-    assert pp_samples_no_tx['lp'].shape == (NUM_LOCAL_DRAWS, 2, nobs)
-    
+    assert pp_samples_no_tx["alpha0"].shape == (NUM_LOCAL_DRAWS,)
+    assert pp_samples_no_tx["lp"].shape == (NUM_LOCAL_DRAWS, 2, nobs)
+
     ## test per-chain
     global_samples_by_chain = protector.mcmc.get_samples(group_by_chain=True)
 
@@ -102,8 +104,15 @@ def test_postpred(protector, rng_key):
     )
 
     # check shapes of samples
-    assert pp_samples_by_chain['alpha0'].shape == (NUM_CHAINS, NUM_LOCAL_DRAWS // NUM_CHAINS, )
-    assert pp_samples_by_chain['Feps'].shape == (NUM_CHAINS, NUM_LOCAL_DRAWS // NUM_CHAINS, nobs)
+    assert pp_samples_by_chain["alpha0"].shape == (
+        NUM_CHAINS,
+        NUM_LOCAL_DRAWS // NUM_CHAINS,
+    )
+    assert pp_samples_by_chain["Feps"].shape == (
+        NUM_CHAINS,
+        NUM_LOCAL_DRAWS // NUM_CHAINS,
+        nobs,
+    )
 
     ## test not per-chain
     rng_key, sub_key = random.split(rng_key)
@@ -119,5 +128,5 @@ def test_postpred(protector, rng_key):
     )
 
     # check shapes of samples
-    assert pp_samples['alpha0'].shape == (NUM_LOCAL_DRAWS, )
-    assert pp_samples['Feps'].shape == (NUM_LOCAL_DRAWS, nobs)
+    assert pp_samples["alpha0"].shape == (NUM_LOCAL_DRAWS,)
+    assert pp_samples["Feps"].shape == (NUM_LOCAL_DRAWS, nobs)

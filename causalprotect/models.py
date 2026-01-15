@@ -241,7 +241,7 @@ class PROTECTModel:
                 'no_proxy_no_y': no_proxy_no_y,
                 'tx_informative': no_proxy > no_proxy_no_tx,
                 'y_informative': no_proxy > no_proxy_no_y,
-                'passed': (no_proxy > no_proxy_no_tx) and (no_proxy > no_proxy_no_y)
+                'passed': jnp.logical_and(no_proxy > no_proxy_no_tx, no_proxy > no_proxy_no_y)
             }
             all_passed *= set2[proxy]['passed']
 

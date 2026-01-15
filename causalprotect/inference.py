@@ -20,6 +20,7 @@ from numpy.polynomial.hermite_e import hermegauss
 from causalprotect.models import PROTECTModel
 from causalprotect.distributions import PowerGeneralizedWeibullLog as PGW
 from causalprotect.utils import (
+    marginalize_loglike_over_samples,
     optimize_pgw,
     time_event_to_time_cens,
     generate_cv_intrain_matrix,
@@ -388,40 +389,6 @@ class PROTECTInference:
 
         return log_lik
 
-    def log_likelihood_per_patient_for_all_ppmodes(self):
-        """
-        get log likelihoods of the model per patient for all ppmodes, convenience function
-        """
-        if len(self.mcmc_samples) == 0:
-            raise ValueError("No MCMC samples found. First run_inference()")
-
-        lls_out = {}
-
-        data = self.train_data
-        control = self.default_control
-        control["N"] = data["time_cens"].shape[0]
-        model = partial(
-            self.protect_model.model,
-            prm_fn=self.protect_model.prior_func,
-            data=data,
-            obs_masks=self.train_obs_masks,
-            control=control,
-        )
-
-        for ppmode, samples in self.mcmc_samples.items():
-            if ppmode == "posterior":
-                continue
-            if "no_tx" in ppmode:
-                print(
-                    f"Warning: log likelihood for y not implemented yet when enumerating treatment, ppmode = {ppmode}"
-                )
-
-            lls = log_likelihood(model, samples, batch_ndims=1)
-
-            # calculate likelihoods per observation site and patient
-            lls_out[ppmode] = _log_likelihood_per_patient(lls)
-
-        return lls_out
 
     def model_checks(
         self,
@@ -546,7 +513,7 @@ class PROTECTInference:
             keys_baseline = random.split(rng_baseline, num_folds)
             baseline_samples = pmap(baseline_fn)(keys_baseline, in_train_mat)
             baseline_lls = log_likelihood(ll_model, baseline_samples, batch_ndims=2)
-            baseline_lls_per_patient = vmap(_log_likelihood_per_patient)(baseline_lls)
+            baseline_lls_per_patient = vmap(marginalize_loglike_over_samples)(baseline_lls)
             ll_summary_baseline = vmap(
                 partial(summarize_likelihoods, obs_masks=self.obs_masks)
             )(baseline_lls_per_patient, in_test=~in_train_mat)
@@ -666,7 +633,8 @@ class PROTECTInference:
                 # summarize likelihoods per patient
                 for setname, lls_set in lls.items():
                     # lls_set shape is (num_folds, num_global_samples, num_patients)
-                    lls_per_patient = vmap(_log_likelihood_per_patient)(lls_set)
+                    lls_per_patient = vmap(marginalize_loglike_over_samples)(lls_set)
+                    # lls_per_patient shape is (num_folds, num_patients)
                     ll_summary = vmap(
                         partial(summarize_likelihoods, obs_masks=self.obs_masks)
                     )(lls_per_patient, in_test=~in_train_mat)
@@ -742,7 +710,7 @@ class PROTECTInference:
         lls = log_likelihood(
             self.pp_model_template, samples, control=self.default_control
         )
-        lls_per_patient = _log_likelihood_per_patient(lls)
+        lls_per_patient = marginalize_loglike_over_samples(lls)
 
         return samples, lls_per_patient
 
@@ -1012,7 +980,8 @@ def _grid_postpred_for_sample(
     )
     # make log_joint function
     log_joint_fn = _make_log_joint_fn(conditioning_sets)
-    # get weights
+
+    # get weights for each local parameter value (so we can do hermite-gauss quadrature if needed)
     weights = (
         local_prm_value_weights
         if local_prm_value_weights is not None
@@ -1046,7 +1015,9 @@ def _grid_postpred_for_sample(
         # log_probs
         ell_set = {}
         for site_name, log_prob in lls.items():
+            # in shape: (num_local_values, num_patients)
             ell = logsumexp(log_prob + log_joint, axis=0)
+            # out shape: (num_patients,)
             ell_set[site_name] = ell
         e_lls[setname] = ell_set
 
@@ -1141,52 +1112,6 @@ def _make_log_joint_fn(conditioning_sets):
 # extract the first post_sample from the first chain
 
 
-# setup set posterior predictive function with mcmc
-def _make_scannable_mcmc_postpred_fn(
-    rng_key,
-    global_sample,
-    pp_mode,
-    model,
-    data,
-    control,
-    obs_masks=None,
-    mcmc_kwargs={},
-):
-    """
-    make a jittable function for running postpred
-    """
-    # update defaults for postpred mcmc
-    default_postpred_mcmc_kwargs = {
-        "num_warmup": 100,
-        "num_samples": 250,
-        "num_chains": 1,
-        "progress_bar": False,
-        "jit_model_args": True,
-    }
-    for key, value in default_postpred_mcmc_kwargs.items():
-        mcmc_kwargs.setdefault(key, value)
-
-    model_template = partial(model, data=data, obs_masks=obs_masks)
-    pp_control = _get_ppcontrol(control, pp_mode)
-
-    def pp_model(global_sample):
-        # print(pp_control)
-        with handlers.condition(data=global_sample):
-            return model_template(control=pp_control)
-
-    # run warmup (which will trigger jitting)
-    pp_mcmc = MCMC(NUTS(pp_model), **mcmc_kwargs)
-    pp_mcmc.warmup(rng_key, global_sample=global_sample)
-
-    # run one posterior predictive modes on all data
-    def scannable_ppfun(rng_key, global_sample):
-        pp_key, carry_key = random.split(rng_key)
-        local_sample = _get_local_sample_from_mcmcobj(pp_key, pp_mcmc, global_sample)
-        return carry_key, local_sample
-
-    return scannable_ppfun
-
-
 def _make_mcmc_postpred_fn(
     global_sample,
     pp_mode,
@@ -1226,9 +1151,12 @@ def _make_mcmc_postpred_fn(
         # run one posterior predictive modes on all data
         def scannable_ppfun(rng_key, global_sample):
             pp_key, carry_key = random.split(rng_key)
-            local_sample = _get_local_sample_from_mcmcobj(
-                pp_key, pp_mcmc, global_sample
-            )
+            pp_mcmc.run(pp_key, global_sample)
+            local_samples = pp_mcmc.get_samples()
+            local_sample = {k: v[-1] for k, v in local_samples.items()}
+            # local_sample = _get_local_sample_from_mcmcobj(
+            #     pp_key, pp_mcmc, global_sample
+            # )
             return carry_key, local_sample
 
         _, locals_samples = scan(scannable_ppfun, rng_key, post_samples)
@@ -1246,7 +1174,7 @@ def _make_mcmc_postpred_fn(
             lls = log_likelihood(
                 partial(model_template, control=control), post_samples | locals_samples
             )
-            lls_per_patient = _log_likelihood_per_patient(lls)
+            lls_per_patient = marginalize_loglike_over_samples(lls)
 
             return lls_per_patient
 
@@ -1368,13 +1296,6 @@ def _make_baseline_fn(global_parameters, model, control, mcmc_kwargs={}):
     return baseline_fn
 
 
-def _get_local_sample_from_mcmcobj(rng_key, mcmc, global_sample, *args, **kwargs):
-    mcmc.run(rng_key, global_sample=global_sample, *args, **kwargs)
-    ppsmps = mcmc.get_samples()
-    ppsmps = {k: v[-1] for k, v in ppsmps.items()}  # grab only the last N samples
-    return ppsmps
-
-
 def _get_ppcontrol(inference_control, ppmode="no_y"):
     """
     helper function to generate a control dictionary for posterior predictions
@@ -1466,34 +1387,6 @@ def _slice_posterior_for_pp(
     }
 
     return sliced_samples
-
-
-def _log_likelihood_per_patient(lls, group_by_chain=False):
-    # TODO: change this into util function in protect/utils.py
-    """
-    calculate log likelihoods per patient, from per-sample likelihoods
-    """
-    assert not group_by_chain, "group_by_chain=True not implemented yet"
-    obs_sites = [k for k in lls.keys() if k.startswith("obs_")]
-    num_samples = lls[obs_sites[0]].shape[0]
-
-    lls_per_patient = {}
-    # summarize across per site across observations
-    lls_joint = jnp.zeros(lls[obs_sites[0]].shape)
-    for obs_site, ll in lls.items():
-        var_name = obs_site.replace("obs_", "")
-        lls_per_observation = logsumexp(ll, axis=0) - jnp.log(num_samples)
-        lls_joint += lls_per_observation
-        lls_per_patient[var_name] = lls_per_observation
-
-    # calculate joint likelihood over treatment and outcome
-    lltxy = lls["obs_tx"] + lls["obs_y"]
-    lls_per_patient["txy"] = logsumexp(lltxy, axis=0) - jnp.log(num_samples)
-
-    # calculate joint total likelihood
-    lls_per_patient["joint"] = logsumexp(lls_joint, axis=0) - jnp.log(num_samples)
-
-    return lls_per_patient
 
 
 def _marginalize_hazard_ratio_pgw(rng_key, sample, maxtime=10, start=None):
