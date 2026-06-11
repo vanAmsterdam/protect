@@ -51,6 +51,33 @@ def test_slice_posterior_for_pp():
         _slice_posterior_for_pp(samples, global_sample_shape, num_samples_out=num_chains * num_samples + 1, group_by_chain=True)
 
 
+def test_marginalized_hazard_ratio_rejects_data_without_matching_samples():
+    protector = PROTECTInference.__new__(PROTECTInference)
+    protector.mcmc_samples = {"no_txy": object()}
+
+    with pytest.raises(
+        ValueError,
+        match="Cannot use data with internally saved no_txy samples",
+    ):
+        protector.get_marginalized_hazard_ratio(
+            random.PRNGKey(0),
+            data={"time_cens": jnp.ones(2)},
+        )
+
+
+@pytest.mark.parametrize("argument", ["data", "obs_masks"])
+def test_marginalized_hazard_ratio_rejects_ignored_arguments(argument):
+    protector = PROTECTInference.__new__(PROTECTInference)
+    protector.mcmc_samples = {}
+    kwargs = {
+        "no_txy_samples": object(),
+        argument: object(),
+    }
+
+    with pytest.raises(ValueError, match=f"{argument} is ignored"):
+        protector.get_marginalized_hazard_ratio(random.PRNGKey(0), **kwargs)
+
+
 
 @pytest.fixture(scope="module")
 def load_data():
