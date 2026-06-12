@@ -764,6 +764,12 @@ class PROTECTInference:
         # this simulates the setting in an rct where treatment status and outcome are unobserved
         if no_txy_samples is None:
             if "no_txy" in self.mcmc_samples:
+                if data is not None:
+                    raise ValueError(
+                        "Cannot use data with internally saved no_txy samples because "
+                        "the samples may correspond to different data. Generate matching "
+                        "no_txy_samples separately and pass them without data."
+                    )
                 no_txy_samples = self.mcmc_samples["no_txy"]
             else:
                 print("getting no_txy samples from posterior predictive")
@@ -782,9 +788,9 @@ class PROTECTInference:
                 )
         else:
             if data is not None:
-                raise "when supplying no_txy_samples, data is ignored"
+                raise ValueError("When supplying no_txy_samples, data is ignored.")
             if obs_masks is not None:
-                raise "when supplying no_txy_samples, obs_masks is ignored"
+                raise ValueError("When supplying no_txy_samples, obs_masks is ignored.")
 
         num_obs = no_txy_samples["Fhat"].shape[-1]
 
