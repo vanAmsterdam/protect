@@ -17,7 +17,7 @@ from tqdm import tqdm
 from tensorflow_probability.substrates import jax as tfp
 import warnings
 import xarray as xr
-
+from jax.scipy.special import logsumexp
 
 import funsor
 from numpyro.distributions.util import is_identically_one
@@ -42,6 +42,37 @@ distribution_dict = {
     'Uniform':            dist.Uniform,
     # 'InducedDirichlet':   InducedDirichlet
 }
+
+
+def marginalize_loglike_over_samples(lls, group_by_chain=False):
+    """
+    calculate log likelihoods per patient, from per-sample likelihoods
+    :param lls: dictionary with log likelihoods per observation site, shape (num_samples, num_patients)
+    :param group_by_chain: whether the samples are grouped by chain (currently True not implemented)
+    output: dictionary with log likelihoods per patient, shape (num_patients,)
+    """
+    assert not group_by_chain, "group_by_chain=True not implemented yet"
+    obs_sites = [k for k in lls.keys() if k.startswith("obs_")]
+    num_samples = lls[obs_sites[0]].shape[0]
+
+    lls_per_patient = {}
+    # summarize across per site across observations
+    lls_joint = jnp.zeros(lls[obs_sites[0]].shape)
+    for obs_site, ll in lls.items():
+        var_name = obs_site.replace("obs_", "")
+        lls_per_observation = logsumexp(ll, axis=0) - jnp.log(num_samples)
+        lls_joint += lls_per_observation
+        lls_per_patient[var_name] = lls_per_observation
+
+    # calculate joint likelihood over treatment and outcome
+    lltxy = lls["obs_tx"] + lls["obs_y"]
+    lls_per_patient["txy"] = logsumexp(lltxy, axis=0) - jnp.log(num_samples)
+
+    # calculate joint total likelihood
+    lls_per_patient["joint"] = logsumexp(lls_joint, axis=0) - jnp.log(num_samples)
+
+    return lls_per_patient
+
 
 
 def _check_binary(y_true):
@@ -255,21 +286,23 @@ def get_log_likelihoods_from_trace(model_trace):
         if site["type"] == "sample" and site["is_observed"]
     }
 
-def generate_cv_intrain_matrix(rng_key, num_obs, num_folds):
-    """
-    Generate cross-validation splits using jax.
-    
-    :param rng_key: jax.random.PRNGKey
-    :param num_obs: int, total number of observations
-    :param num_folds: int, number of folds
-    :return: matrix of shape (num_folds, num_obs), each row contains a boolean mask for the observation being in the train fold
-    """
-    intrain_indices = generate_cv_splits(rng_key, num_obs, num_folds)
-    in_train_list = []
+def make_other_folds_idx(num_folds: int):
+    idx = []
     for i in range(num_folds):
-        in_train = jnp.where(jnp.isin(jnp.arange(num_obs), intrain_indices[i]), True, False)
-        in_train_list.append(in_train)
-    return jnp.stack(in_train_list, axis=0)
+        idx.append(np.concatenate([np.arange(i), np.arange(i+1, num_folds)]))
+    return jnp.asarray(np.stack(idx))  # (F, F-1), static
+
+def _cv_splits_one_key(rng_key, num_obs, num_folds, other_folds_idx):
+    fold_size = num_obs // num_folds
+    usable = fold_size * num_folds
+
+    perm = jax.random.permutation(rng_key, jnp.arange(num_obs))[:usable]
+    folds = perm.reshape((num_folds, fold_size))  # (F, S)
+
+    # gather folds other than i, no dynamic slicing
+    train_folds = jnp.take(folds, other_folds_idx, axis=0)  # (F, F-1, S)
+    train_idx = train_folds.reshape((num_folds, -1))        # (F, usable - fold_size)
+    return train_idx, folds
 
 
 def generate_cv_splits(rng_key, num_obs, num_folds):
@@ -279,24 +312,29 @@ def generate_cv_splits(rng_key, num_obs, num_folds):
     :param rng_key: jax.random.PRNGKey
     :param num_obs: int, total number of observations
     :param num_folds: int, number of folds
-    :return: list of arrays, each array contains indices for training samples in each fold
+    :return: tuple arrays (train, test), each array contains indices for training samples in each fold
     """
-    indices = jnp.arange(num_obs)
-    shuffled_indices = random.permutation(rng_key, indices)
-    # find the number of samples in each test fold (floor(num_obs/num_folds))
-    test_fold_sizes = jnp.full(num_folds, num_obs // num_folds)
+    other_folds_idx = make_other_folds_idx(num_folds)
+    train_idx, test_idx = _cv_splits_one_key(rng_key, num_obs, num_folds, other_folds_idx)
+
+    return train_idx, test_idx
+
+def generate_cv_intrain_matrix(rng_key, num_obs, num_folds):
+    """
+    Generate cross-validation splits using jax.
     
-    test_folds = []
-    start = 0
-    for size in test_fold_sizes:
-        test_folds.append(shuffled_indices[start:start + size])
-        start += size
-    
-    train_indices = []
-    for test_fold_indices in test_folds:
-        train_indices.append(jnp.setdiff1d(indices, test_fold_indices))
-    
-    return train_indices
+    :param rng_key: jax.random.PRNGKey
+    :param num_obs: int, total number of observations
+    :param num_folds: int, number of folds
+    :return: matrix of shape (num_folds, num_obs), each row contains a boolean mask for the observation being in the train fold
+    """
+    train_idx, test_idx = generate_cv_splits(rng_key, num_obs, num_folds)
+    # train idx is (num_folds, num_train)
+    in_train_list = []
+    for i in range(num_folds):
+        in_train = jnp.where(jnp.isin(jnp.arange(num_obs), train_idx[i]), True, False)
+        in_train_list.append(in_train)
+    return jnp.stack(in_train_list, axis=0)
 
 
 def summarize_likelihoods(lls_per_patient, obs_masks=None, in_test=None):
